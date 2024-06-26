@@ -1,9 +1,16 @@
+import csv
+
+
 def read_file(filename: str) -> list[dict]:
     """Читает данные из CSV файла и преобразует их в список словарей.
 
     :param filename: Название файла, содержащего данные.
     :return: Список словарей с данными о домах.
     """
+    with open(filename, mode="r", encoding="utf-8") as file:
+        # прочитаем с помощью модуля CSV https://docs.python.org/3/library/csv.html
+        reader = csv.DictReader(file)
+        return [row for row in reader]  # какая-то короткая запись (работает)
 
 
 def classify_house(floor_count: int) -> str:
@@ -15,6 +22,23 @@ def classify_house(floor_count: int) -> str:
     :param floor_count: Количество этажей в доме.
     :return: Категория дома в виде строки: "Малоэтажный", "Среднеэтажный" или "Многоэтажный".
     """
+    LOW_RISE = 5
+    MID_RISE = 16
+
+    # проверка типа данных
+    if not isinstance(floor_count, int):
+        raise TypeError("Количество этажей должно быть целым числом.")
+
+    # проверка на ноль и отрицательное значение
+    if floor_count <= 0:
+        raise ValueError("Количество этажей должно быть больше нуля")
+
+    # условия
+    if floor_count <= LOW_RISE:
+        return "Малоэтажный"
+    if floor_count <= MID_RISE:
+        return "Среднеэтажный"
+    return "Многоэтажный"
 
 
 def get_classify_houses(houses: list[dict]) -> list[str]:
@@ -23,6 +47,16 @@ def get_classify_houses(houses: list[dict]) -> list[str]:
     :param houses: Список словарей с данными о домах.
     :return: Список категорий домов.
     """
+
+    categories = []
+    for house in houses:
+        floor_count = int(house["floor_count"])
+        # вызовем уже реализованную функцию
+        category = classify_house(floor_count)
+        # добавим в список
+        categories.append(category)
+
+    return categories
 
 
 def get_count_house_categories(categories: list[str]) -> dict[str, int]:
@@ -33,6 +67,16 @@ def get_count_house_categories(categories: list[str]) -> dict[str, int]:
     :return: Словарь с количеством домов в каждой категории.
     """
 
+    category_count = {}
+    # пройдем по всем категориям
+    for cat in categories:
+        if cat in category_count:  # короткая проверка на вхождение (можно еще count)
+            category_count[cat] += 1
+        else:
+            category_count[cat] = 1
+
+    return category_count
+
 
 def min_area_residential(houses: list[dict]) -> str:
     """Находит адрес дома с наименьшим средним количеством квадратных метров жилой площади на одного жильца.
@@ -40,3 +84,33 @@ def min_area_residential(houses: list[dict]) -> str:
     :param houses: Список словарей с данными о домах.
     :return: Адрес дома с наименьшим средним количеством квадратных метров жилой площади на одного жильца.
     """
+    min_area_person = 100000000
+    min_area_addr = ""
+
+    for house in houses:
+        area_residential = house["area_residential"]
+        population = house["population"]
+        if not isinstance(population, int):
+            raise TypeError("Должно быть целое число")
+        if population > 0:  # на ноль не делим
+            area_person = area_residential / population
+            if area_person < min_area_person:
+                min_area_person = area_person
+                min_area_addr = house["house_address"]
+
+    return min_area_addr
+
+
+# file_path = 'housing_data.csv'
+# data = read_file(file_path)
+# print(data)
+# print("---")
+# #print(classify_house(-1))
+# print(classify_house(3))
+# print("---")
+# print(get_classify_houses(data))
+# print("---")
+# categories = get_classify_houses(data)
+# print(get_count_house_categories(categories))
+# print("---")
+# print(min_area_residential(data))
